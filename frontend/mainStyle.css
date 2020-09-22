@@ -1,0 +1,97 @@
+html {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 30px;
+  font-family: sans-serif;
+  background: linear-gradient(#141e30, #243b55);
+  color: #fff;
+}
+
+.site-select {
+  margin: 0 0 40px 0;
+}
+
+.param-form h2 {
+  margin: 0 0 10px 0;
+}
+
+.param-form textarea {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 30px;
+  border: none;
+  border-bottom: 1px solid #fff;
+  outline: none;
+  background: transparent;
+}
+
+#submit-params {
+  cursor: pointer;
+  display: inline-block;
+  width: 100px;
+  height: 30px;
+  border: none;
+  border-radius: 3px;
+  font-size: 1.1em;
+  color: #000;
+  background: linear-gradient(to left, #1b9aaa, #28afb0);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+}
+
+.execution-status {
+  display: inline-block;
+  margin-left: 20px;
+}
+
+.execution-status svg {
+  width: 23px;
+  height: 23px;
+  margin-left: 5px;
+  margin-bottom: -3px;
+}
+
+.hidden {
+  display: none;
+}
+/**************************************************/
+/* Spinner */
+.lds-ring {
+  display: inline-block;
+  position: relative;
+  width: 26px;
+  height: 26px;
+}
+.lds-ring div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 23px;
+  height: 23px;
+  margin: 6px;
+  border: 3px solid #cef;
+  border-radius: 50%;
+  animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  border-color: #cef transparent transparent transparent;
+}
+.lds-ring div:nth-child(1) {
+  animation-delay: -0.45s;
+}
+.lds-ring div:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.lds-ring div:nth-child(3) {
+  animation-delay: -0.15s;
+}
+@keyframes lds-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
