@@ -18,16 +18,16 @@ class Crawler:
                one_page_only=False) -> List[Page]:
         raise NotImplementedError
 
-    def get_result_pages(self, html_page: Tag, one_page_only: bool = False):
-        yield html_page
-        if not one_page_only:
-            while next_page := self._get_next_page_url(html_page):
-                yield next_page
-
     def get_messages(self,
                      page_html: str,
                      search_request: str) -> Iterable[Message]:
         raise NotImplementedError
+
+    def _get_result_pages(self, html_page: Tag, one_page_only: bool = False):
+        yield html_page
+        if not one_page_only:
+            while next_page := self._get_next_page_url(html_page):
+                yield next_page
 
     def _get_next_page_url(self, html_page: Tag):
         raise NotImplementedError
@@ -96,17 +96,19 @@ class BHFCrawler(AsyncCrawler):
 
     def _get_thread_links(self, html_page: Tag, one_page_only: bool = False):
         """Get links for threads listed on html page"""
-        for page in self.get_result_pages(html_page, one_page_only):
+        for page in self._get_result_pages(html_page, one_page_only):
             yield from (
                 f"https://bhf.io{link['href']}" for link in
                 html_page.find_all("a", {"href": re.compile(r"^/thread")})
             )
 
-    def _get_result_pages(self, html_page: Tag, one_page_only: bool):
+    def _get_result_pages(self, html_page: Tag, one_page_only: bool) -> Tag:
         yield html_page
         if not one_page_only:
             while next_page := self._get_next_page_url(html_page):
-                yield next_page
+                resp = self.session_manager.get(next_page)
+                html = resp.content.decode("utf-8")
+                yield BeautifulSoup(html)
 
     def _get_next_page_url(html_page: Tag):
         return html_page.find("link", {"rel": "next"})

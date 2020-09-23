@@ -41,6 +41,10 @@ class BHFSessionManager(SessionManager):
                           "Gecko/20100101 Firefox/79.0",
         }
 
+    def get(self, url) -> Response:
+        with Session() as session:
+            return session.get(url, cookies=self.cookies)
+    
     def request_search(self, search_request: str) -> Response:
         with Session() as session:
             session.headers.update(self.headers)
