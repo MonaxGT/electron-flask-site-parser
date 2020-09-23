@@ -37,7 +37,8 @@ class AsyncCrawler(Crawler):
     def search(self, search_request: str, *,
                one_page_only=False) -> List[Page]:
         pages = []
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(
             self._search_async(search_request,
                                pages,

@@ -1,4 +1,5 @@
 const electron = require("electron");
+const axios = require("axios");
 const path = require("path");
 
 const MainMenuTemplate = require("./frontend/templates/mainMenuTemplate");
@@ -29,10 +30,11 @@ app.on("ready", () => {
 
   ipcMain.on("parse-with-params", async (e, data) => {
     /* TODO parsing */
-    console.log(data);
-    await new Promise((r) => setTimeout(r, 3000));
-    //*******************/
-
-    e.sender.send("parsing-complete", /* success: */ true);
+    responce = await axios.post(`http://127.0.0.1:5000/messages/${data.site}`, {
+      filename: data.path,
+      keywords: data.search_terms,
+      one_search_page_only: true
+    });
+    e.sender.send("parsing-complete", responce.status == 201);
   });
 });
