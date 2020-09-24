@@ -10,7 +10,8 @@ APIResource = namedtuple('APIResource', ('resource', 'endpoint'))
 
 
 urlpatterns: List[APIResource] = [
-    APIResource(resources.BHFMessages, '/messages/bhf')
+    APIResource(resources.BHFMessages, '/messages/bhf'),
+    APIResource(resources.LolzMessages, '/messages/lolz')
 ]
 
 
