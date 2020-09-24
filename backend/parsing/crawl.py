@@ -109,7 +109,8 @@ class BHFCrawler(AsyncCrawler):
             while next_page := self._get_next_page_url(html_page):
                 resp = self.session_manager.get(next_page)
                 html = resp.content.decode("utf-8")
-                yield BeautifulSoup(html)
+                yield BeautifulSoup(html, 'html.parser')
 
-    def _get_next_page_url(html_page: Tag):
-        return html_page.find("link", {"rel": "next"})
+    def _get_next_page_url(self, html_page: Tag):
+        link_html = html_page.find("link", {"rel": "next"})
+        return link_html['href']

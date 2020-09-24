@@ -15,12 +15,14 @@ class BHFMessages(Resource):
     def post(self):
         args = self.parser.parse_args()
         filename = args['filename']
-        keywords = args['keywords']
+        keywords: str = args['keywords']
         one_search_page_only = args['one_search_page_only']
 
         try:
             crawler = BHFCrawler()
-            parse_messages(crawler, keywords, filename, one_search_page_only)
+            search_terms = keywords.strip().splitlines()
+            parse_messages(crawler, search_terms,
+                           filename, one_search_page_only)
         except ServerIsDownException:
             abort(502, message='BHF server is down')
         else:
