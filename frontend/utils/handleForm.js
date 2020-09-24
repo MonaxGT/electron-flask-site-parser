@@ -33,7 +33,7 @@ form.addEventListener("submit", (e) => {
   });
 });
 
-ipcRenderer.on("parsing-complete", (e, success) => {
+ipcRenderer.on("parsing-complete", (e, {success, status, data, error}) => {
   submit_btn.disabled = false;
   progressVisual.classList.add("hidden");
 
@@ -46,6 +46,8 @@ ipcRenderer.on("parsing-complete", (e, success) => {
       }
     }
     textarea.value = "";
+  } else {
+    console.error({status, data, error})
   }
 });
 

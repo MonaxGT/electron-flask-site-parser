@@ -43,6 +43,11 @@ body {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
 }
 
+#submit-params:disabled {
+  cursor: progress;
+  background: linear-gradient(to left, #464B59, #4A777D);;
+}
+
 .execution-status {
   display: inline-block;
   margin-left: 20px;

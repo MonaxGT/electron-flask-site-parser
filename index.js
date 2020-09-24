@@ -7,8 +7,12 @@ const MainMenuTemplate = require("./frontend/templates/mainMenuTemplate");
 const { app, BrowserWindow, Menu, ipcMain } = electron;
 
 try {
-  require("electron-reload")(__dirname); // hot reload
-} catch (error) {}
+  require("electron-reload")(__dirname);
+} catch (error) {
+  console.warn(
+    "Hot reload is disabled. If you expect it to be enabled, check if npm package electron-reload is installed"
+  );
+}
 
 let mainWindow;
 app.on("ready", () => {
@@ -28,13 +32,27 @@ app.on("ready", () => {
     app.quit();
   });
 
-  ipcMain.on("parse-with-params", async (e, data) => {
+  ipcMain.on("parse-with-params", (e, data) => {
     /* TODO parsing */
-    responce = await axios.post(`http://127.0.0.1:5000/messages/${data.site}`, {
-      filename: data.path,
-      keywords: data.search_terms,
-      one_search_page_only: true
-    });
-    e.sender.send("parsing-complete", responce.status == 201);
+    axios
+      .post(`http://127.0.0.1:5000/messages/${data.site}`, {
+        filename: data.path,
+        keywords: data.search_terms,
+        one_search_page_only: true,
+      })
+      .then(
+        (responce) => {
+          e.sender.send("parsing-complete", {
+            success: responce.status == 201,
+            status: responce.status,
+            data: responce.data,
+          });
+        },
+        (error) => {
+          console.error(e);
+          e.sender.send("parsing-complete", { success: false, error: error });
+        }
+      )
+      .catch((e) => console.log(e));
   });
 });
