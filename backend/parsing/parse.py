@@ -46,8 +46,8 @@ def parse_messages(crawler: Crawler,
 
 
 if __name__ == '__main__':
-    from parsing.crawl import BHFCrawler
-    crawler = BHFCrawler()
+    from parsing.crawl import LolzCrawler
+    crawler = LolzCrawler()
     parse_messages(
         crawler,
         ['+380'],

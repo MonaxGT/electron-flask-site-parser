@@ -9,6 +9,9 @@ from typing import Iterable
 
 
 class SessionManager:
+    def __init__(self, cookies=None):
+        self.cookies = cookies if cookies else {}
+
     async def afetch(self, url: str, session):
         async with session.get(url) as response:
             html = await response.read()
@@ -19,6 +22,14 @@ class SessionManager:
                                          cookies=self.cookies) as aiosession:
             tasks = [self.afetch(url, aiosession) for url in urls]
             return await asyncio.gather(*tasks)
+
+    def get(self, url) -> Response:
+        with Session() as session:
+            return session.get(url, cookies=self.cookies)
+
+    def get_page(self, url: str) -> str:
+        response = self.get(url)
+        return response.content.decode(response.encoding)
 
     def request_search(self, search_request: str) -> Response:
         raise NotImplementedError
@@ -40,11 +51,6 @@ class BHFSessionManager(SessionManager):
             "User-Agent": "Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:79.0) "
                           "Gecko/20100101 Firefox/79.0",
         }
-
-    def get(self, relative_url) -> Response:
-        url = self.main_page_link + relative_url
-        with Session() as session:
-            return session.get(url, cookies=self.cookies)
 
     def request_search(self, search_request: str) -> Response:
         with Session() as session:
@@ -72,3 +78,14 @@ class BHFSessionManager(SessionManager):
         if not token:
             raise ValueError("You are unauthorized!")
         return token['value']
+
+
+class LolzSessionManager(SessionManager):
+    def __init__(self, main_page_link):
+        self.main_page_link = main_page_link
+        self.cookies = {
+            "xf_session": "023f2a4242ca875122dcc5aac985c259",
+            "xf_market_currency": "usd",
+            "G_ENABLED_IDPS": "google",
+            "df_id": "8fc954a8a7f071d56e1abbe7505d7b31",
+        }

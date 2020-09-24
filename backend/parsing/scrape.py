@@ -104,7 +104,10 @@ class LolzScraper(MessageScraper):
 
     @staticmethod
     def acquire_date(msg_tree: Tag):
-        datetime_str = msg_tree.find("span", {"class": "DateTime"})["title"]
+        try:
+            datetime_str = msg_tree.find("span", {"class": "DateTime"})["title"]    # noqa: E501
+        except TypeError:
+            datetime_str = msg_tree.find("abbr", {"class": "DateTime"}).text
         # Aug 22, 2020 at 10:30 PM
         return datetime.strptime(datetime_str, "%b %d, %Y at %I:%M %p")
 
