@@ -60,6 +60,10 @@ body {
   margin-bottom: -3px;
 }
 
+.failed-visual {
+  color: #47191b;
+}
+
 .hidden {
   display: none;
 }

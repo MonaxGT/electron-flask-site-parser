@@ -5,6 +5,7 @@ const radio_buttons = form.querySelectorAll(".site-select input");
 const textarea = form.querySelector("#search-terms");
 const submit_btn = form.querySelector("#submit-params");
 const successVisual = form.querySelector(".success-visual");
+const failedVisual = form.querySelector(".failed-visual");
 const progressVisual = form.querySelector(".progress-visual");
 
 form.addEventListener("submit", (e) => {
@@ -14,6 +15,7 @@ form.addEventListener("submit", (e) => {
     if (!userSelection.canceled) {
       submit_btn.disabled = true;
       successVisual.classList.add("hidden");
+      failedVisual.classList.add("hidden");
       progressVisual.classList.remove("hidden");
 
       let site = null;
@@ -47,6 +49,7 @@ ipcRenderer.on("parsing-complete", (e, {success, status, data, error}) => {
     }
     textarea.value = "";
   } else {
+    failedVisual.classList.remove("failed-visual");
     console.error({status, data, error})
   }
 });
