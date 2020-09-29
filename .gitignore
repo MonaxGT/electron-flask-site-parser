@@ -8,3 +8,5 @@ __pycache__/
 appdist/
 build/
 app.spec
+
+electron~aa-parser*
