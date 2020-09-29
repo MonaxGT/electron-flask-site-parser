@@ -1,8 +1,6 @@
-import os
 import re
-from requests import Response
+import requests
 from urllib.parse import urlencode
-from contextlib import redirect_stdout
 import asyncio
 from collections import namedtuple
 from bs4 import BeautifulSoup
@@ -14,6 +12,7 @@ from parsing.session_managers import (
 )
 from parsing.scrape import MessageScraper, BHFScraper, LolzScraper, Message
 from parsing.exceptions import NoSearchResultsException
+from utils.context import no_print
 
 from typing import Iterable, List, Iterator
 from bs4.element import Tag
@@ -112,33 +111,31 @@ class BingCrawler(Crawler):
 
     @classmethod
     def get_results(cls, search_request: str, one_page_only):
-        engine = cls.Engine(cls.server)
-        return engine.search(search_request, one_page_only)
+        with no_print():
+            engine = cls.Engine(cls.server)
+            return engine.search(search_request, one_page_only)
 
     class Engine(bing):
         def search(self, query: str, one_page_only: bool):
             """
             Queries the search_engine for the specified query
             """
-            with open(os.devnull, 'w') as no_print:
-                with redirect_stdout(no_print):
-                    url = self.text_query_encoding(query)
-                    page = self.serve_engine.get_page(url)
-                    print(page)
+            url = self.text_query_encoding(query)
+            page = self.serve_engine.get_page(url)
+            yield from self._get_links(page)
+            if not one_page_only:
+                while url := self._get_next_page_url(page):
                     yield from self._get_links(page)
-                    if not one_page_only:
-                        while url := self._get_next_page_url(page):
-                            yield from self._get_links(page)
-                            page = self.serve_engine.get_page(url)
+                    page = self.serve_engine.get_page(url)
 
-        def _get_links(self, page: Response):
+        def _get_links(self, page: requests.Response):
             links = self.text_result_parsing(page)
             if not links:
                 self.change_proxies()
                 links = self.text_result_parsing(page)
             return links
 
-        def _get_next_page_url(self, page_resp: Response):
+        def _get_next_page_url(self, page_resp: requests.Response):
             page_str = page_resp.content.decode(page_resp.encoding)
             page_html = BeautifulSoup(page_str, 'html.parser')
             a = page_html.find('a', {'class': 'sb_pagN'})
@@ -224,4 +221,6 @@ class LolzCrawler(Crawler):
             if 'forums' in url:
                 continue
             html = self.session_manager.get_page(url)
+            if not html:
+                return
             yield Page(url, html)

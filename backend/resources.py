@@ -38,3 +38,9 @@ class BHFMessages(ParseMessages):
 class LolzMessages(ParseMessages):
     def __init__(self):
         super().__init__(LolzCrawler)
+
+
+if __name__ == "__main__":
+    obj = LolzMessages()
+    obj2 = BHFMessages()
+    print(obj.crawler_class, obj2.crawler_class())

@@ -50,7 +50,7 @@ if __name__ == '__main__':
     crawler = LolzCrawler()
     parse_messages(
         crawler,
-        ['+380'],
+        ['одесса харьков'],
         '/home/mean/Projects/CP/res.xlsx',
-        search_one_page_only=True
+        search_one_page_only=False
     )

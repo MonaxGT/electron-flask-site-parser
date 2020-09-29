@@ -1,8 +1,10 @@
 import asyncio
 import aiohttp
+import requests
 from requests import Session, Response
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from search_engine_scraper import serve_search_engines
 from parsing.exceptions import ServerIsDownException
 
 from typing import Iterable
@@ -11,9 +13,11 @@ from typing import Iterable
 class SessionManager:
     def __init__(self, cookies=None):
         self.cookies = cookies if cookies else {}
+        self.server = serve_search_engines()
 
     async def afetch(self, url: str, session):
-        async with session.get(url) as response:
+        proxy = next(self.server.proxy_pool)
+        async with session.get(url, proxy=proxy) as response:
             html = await response.read()
             return url, html
 
@@ -24,12 +28,25 @@ class SessionManager:
             return await asyncio.gather(*tasks)
 
     def get(self, url) -> Response:
-        with Session() as session:
-            return session.get(url, cookies=self.cookies)
+        for i in range(1, 21):
+            try:
+                proxy = next(self.server.proxy_pool)
+                resp = requests.get(url, cookies=self.cookies,
+                                    proxies={'http': proxy})
+                if resp.status_code == 200:
+                    break
+            except Exception:
+                resp = None
+        return resp
 
     def get_page(self, url: str) -> str:
         response = self.get(url)
-        return response.content.decode(response.encoding)
+        if not response:
+            return ''
+        try:
+            return response.content.decode(response.encoding)
+        except UnicodeDecodeError:
+            return ''
 
     def request_search(self, search_request: str) -> Response:
         raise NotImplementedError
@@ -82,6 +99,7 @@ class BHFSessionManager(SessionManager):
 
 class LolzSessionManager(SessionManager):
     def __init__(self, main_page_link):
+        super().__init__()
         self.main_page_link = main_page_link
         self.cookies = {
             "xf_session": "023f2a4242ca875122dcc5aac985c259",
