@@ -30,11 +30,11 @@ class ParseMessages(Resource):
             return filename, 201
 
 
-class BHFMessages(Resource):
+class BHFMessages(ParseMessages):
     def __init__(self):
         super().__init__(BHFCrawler)
 
 
-class LolzMessages(Resource):
+class LolzMessages(ParseMessages):
     def __init__(self):
         super().__init__(LolzCrawler)
