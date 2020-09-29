@@ -1,11 +1,14 @@
 import os
 import re
-from urllib.parse import urlencode, quote_plus
+from requests import Response
+from urllib.parse import urlencode
 from contextlib import redirect_stdout
 import asyncio
 from collections import namedtuple
 from bs4 import BeautifulSoup
-from search_engine_scraper import bing, serve_search_engines
+from search_engine_scraper import (
+    bing, serve_search_engines, PROXY_USAGE_TIMEOUT
+)
 from parsing.session_managers import (
     SessionManager, BHFSessionManager, LolzSessionManager
 )
@@ -110,38 +113,43 @@ class BingCrawler(Crawler):
     @classmethod
     def get_results(cls, search_request: str, one_page_only):
         engine = cls.Engine(cls.server)
-
-        if one_page_only:
-            yield from engine.search(search_request, 1)
-            return
-
-        page = 1
-        while page <= cls.MAX_PAGES_TO_CRAWL:
-            results = engine.search(search_request, page)
-            if not results:
-                return
-            yield from results
-            page += 1
+        return engine.search(search_request, one_page_only)
 
     class Engine(bing):
-        def search(self, query: str, page: int):
+        def search(self, query: str, one_page_only: bool):
             """
             Queries the search_engine for the specified query
             """
             with open(os.devnull, 'w') as no_print:
                 with redirect_stdout(no_print):
-                    url = self.text_query_encoding(query, page)
+                    url = self.text_query_encoding(query)
                     page = self.serve_engine.get_page(url)
-                    links = self.text_result_parsing(page)
-                    return links
+                    print(page)
+                    yield from self._get_links(page)
+                    if not one_page_only:
+                        while url := self._get_next_page_url(page):
+                            yield from self._get_links(page)
+                            page = self.serve_engine.get_page(url)
 
-        def text_query_encoding(self, query: str, page: int):
-            """
-            Query to be made through bing search
-            Encodes the URL as needed by bing for the query to be valid
-            """
-            url = f'https://www.bing.com/search?q={quote_plus(query)}&first={page * 10}'    # noqa: E501
-            return url
+        def _get_links(self, page: Response):
+            links = self.text_result_parsing(page)
+            if not links:
+                self.change_proxies()
+                links = self.text_result_parsing(page)
+            return links
+
+        def _get_next_page_url(self, page_resp: Response):
+            page_str = page_resp.content.decode(page_resp.encoding)
+            page_html = BeautifulSoup(page_str, 'html.parser')
+            a = page_html.find('a', {'class': 'sb_pagN'})
+            if 'sb_inactP' not in a['class']:
+                return 'https://www.bing.com' + a['href']
+            else:
+                return ''
+
+        def change_proxies(self):
+            self.time_difference = PROXY_USAGE_TIMEOUT
+            self.serve_engine.proxy_check()
 
 
 class BHFCrawler(AsyncCrawler):
@@ -217,7 +225,3 @@ class LolzCrawler(Crawler):
                 continue
             html = self.session_manager.get_page(url)
             yield Page(url, html)
-
-
-if __name__ == "__main__":
-    print(list(BingCrawler.get_results('site:lolz.guru одесса харьков', False)))
