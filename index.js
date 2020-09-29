@@ -3,6 +3,7 @@ const axios = require("axios");
 const path = require("path");
 
 const MainMenuTemplate = require("./frontend/templates/mainMenuTemplate");
+const startServer = require("./startServer");
 
 const { app, BrowserWindow, Menu, ipcMain } = electron;
 
@@ -15,7 +16,10 @@ try {
 }
 
 let mainWindow;
+let server_finalize;
 app.on("ready", () => {
+  server_finalize = startServer()
+
   mainWindow = new BrowserWindow({
     webPreferences: {
       nodeIntegration: true,
@@ -55,4 +59,9 @@ app.on("ready", () => {
       )
       .catch((e) => console.log(e));
   });
+});
+
+app.on("window-all-closed", () => {
+  console.log('Exiting server...')
+  server_finalize();
 });
