@@ -37,12 +37,11 @@ app.on("ready", () => {
   });
 
   ipcMain.on("parse-with-params", (e, data) => {
-    /* TODO parsing */
     axios
       .post(`http://127.0.0.1:5000/messages/${data.site}`, {
         filename: data.path,
         keywords: data.search_terms,
-        one_search_page_only: true,
+        max_pages: Number(data.max_pages),
       })
       .then(
         (responce) => {
