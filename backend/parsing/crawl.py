@@ -9,11 +9,15 @@ from parsing.session_managers import (
 )
 from parsing.scrape import MessageScraper, BHFScraper, LolzScraper, Message
 from parsing.exceptions import NoSearchResultsException
+from utils.patching.patch_search_engine_scraper import (
+    patch_serve_search_engines
+)
 from utils.context import no_print
 
 from typing import Iterable, List, Iterator
 from bs4.element import Tag
 
+patch_serve_search_engines()
 with no_print():
     from search_engine_scraper import (
         bing, serve_search_engines, PROXY_USAGE_TIMEOUT
