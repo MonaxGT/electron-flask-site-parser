@@ -1,4 +1,5 @@
 import re
+import locale
 from datetime import datetime
 from collections import namedtuple
 from itertools import chain
@@ -9,6 +10,17 @@ from bs4.element import Tag
 
 Message = namedtuple("Message", ("text", "date", "username"))
 _Message_html = namedtuple("_Message_html", ("message_tree", "text"))
+
+try:
+    locale.setlocale(locale.LC_ALL, ('RU', 'UTF-8'))
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_ALL, ('Russian_Russia', '1251'))
+    except locale.Error:
+        try:
+            locale.setlocale(locale.LC_ALL, ('Russian_Ukraine', '1251'))
+        except locale.Error:
+            locale.setlocale(locale.LC_ALL, '')
 
 
 class MessageScraper:
@@ -108,8 +120,8 @@ class LolzScraper(MessageScraper):
             datetime_str = msg_tree.find("span", {"class": "DateTime"})["title"]    # noqa: E501
         except TypeError:
             datetime_str = msg_tree.find("abbr", {"class": "DateTime"}).text
-        # Aug 22, 2020 at 10:30 PM
-        return datetime.strptime(datetime_str, "%b %d, %Y at %I:%M %p")
+        # 12 авг 2020 в 17:41
+        return datetime.strptime(datetime_str, "%d %b %Y в %H:%M")
 
     @staticmethod
     def acquire_author(msg_tree: Tag):
