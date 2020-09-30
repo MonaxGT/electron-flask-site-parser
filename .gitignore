@@ -10,3 +10,4 @@ build/
 app.spec
 
 electron~aa-parser*
+secrets.py

@@ -1,3 +1,4 @@
+import base64
 import asyncio
 import aiohttp
 import requests
@@ -5,6 +6,7 @@ from requests import Session, Response
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from parsing.exceptions import ServerIsDownException
+from secrets import lolz_login, lolz_password
 from utils.context import no_print
 from typing import Iterable
 
@@ -29,12 +31,16 @@ class SessionManager:
             tasks = [self.afetch(url, aiosession) for url in urls]
             return await asyncio.gather(*tasks)
 
-    def get(self, url) -> Response:
+    def post(self, url, **kwargs) -> Response:
+        return requests.post(url, cookies=self.cookies, **kwargs)
+
+    def get(self, url, **kwargs) -> Response:
         for i in range(1, 21):
             try:
                 proxy = next(self.server.proxy_pool)
                 resp = requests.get(url, cookies=self.cookies,
-                                    proxies={'http': proxy})
+                                    proxies={'http': proxy},
+                                    **kwargs)
                 if resp.status_code == 200:
                     break
             except Exception:
@@ -103,7 +109,37 @@ class LolzSessionManager(SessionManager):
     def __init__(self, main_page_link):
         super().__init__()
         self.main_page_link = main_page_link
+        self.authenticate(lolz_login, lolz_password)
+
+    def authenticate(self, login: str, password: str):
         self.cookies = {
-            "xf_user": "3536287%2Cd19ef609dea57b9fb939bfb16cdeef005c6c87c2",
-            "df_id": "8fc954a8a7f071d56e1abbe7505d7b31",
+            'G_ENABLED_IDPS': 'google',
+            'xf_market_currency': 'usd'
         }
+        self._get_df_id()
+        self._get_xf_session(login, password)
+        self._get_xf_user(login, password)
+
+    def _get_df_id(self):
+        script_resp = self.get('https://lolz.guru/process-qv9ypsgmv9.js')
+        script = script_resp.content.decode('utf8')
+        secret_str = eval(script[349:524])
+        df_id = base64.b64decode(secret_str).decode()
+        self.cookies['df_id'] = df_id
+
+    def _get_xf_session(self, login: str, password: str):
+        resp = self.get('https://lolz.guru/login/login',
+                        params={'login': login,
+                                'password': password,
+                                'stopfuckingbrute1337': '1'})
+        self.cookies['xf_session'] = resp.cookies['xf_session']
+
+    def _get_xf_user(self, login: str, password: str):
+        resp = self.post('https://lolz.guru/login/login',
+                         params={'login': login,
+                                 'password': password,
+                                 'remember': '1',
+                                 'stopfuckingbrute1337': '1'})
+        self.cookies['xf_session'] = resp.cookies.get('xf_session')
+        self.cookies['xf_user'] = resp.cookies.get('xf_user')
+        self.cookies['xf_logged_in'] = '1'
