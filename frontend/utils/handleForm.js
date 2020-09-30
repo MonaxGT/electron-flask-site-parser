@@ -2,6 +2,7 @@ const { ipcRenderer, remote } = require("electron");
 
 const form = document.querySelector("form.param-form");
 const radio_buttons = form.querySelectorAll(".site-select input");
+const max_pages_input = form.querySelector("#max-pages")
 const textarea = form.querySelector("#search-terms");
 const submit_btn = form.querySelector("#submit-params");
 const successVisual = form.querySelector(".success-visual");
@@ -27,10 +28,11 @@ form.addEventListener("submit", (e) => {
       }
 
       let search_terms = textarea.value;
+      let max_pages = max_pages_input.value
 
       let path = userSelection.filePath;
-
-      ipcRenderer.send("parse-with-params", { site, search_terms, path });
+     
+      ipcRenderer.send("parse-with-params", { site, search_terms, max_pages, path });
     }
   });
 });
@@ -47,6 +49,7 @@ ipcRenderer.on("parsing-complete", (e, {success, status, data, error}) => {
         break;
       }
     }
+    max_pages_input.value = 100
     textarea.value = "";
   } else {
     failedVisual.classList.remove("failed-visual");

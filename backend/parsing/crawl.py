@@ -4,9 +4,6 @@ from urllib.parse import urlencode
 import asyncio
 from collections import namedtuple
 from bs4 import BeautifulSoup
-from search_engine_scraper import (
-    bing, serve_search_engines, PROXY_USAGE_TIMEOUT
-)
 from parsing.session_managers import (
     SessionManager, BHFSessionManager, LolzSessionManager
 )
@@ -16,6 +13,11 @@ from utils.context import no_print
 
 from typing import Iterable, List, Iterator
 from bs4.element import Tag
+
+with no_print():
+    from search_engine_scraper import (
+        bing, serve_search_engines, PROXY_USAGE_TIMEOUT
+    )
 
 
 Page = namedtuple('Page', ('link', 'html'))
@@ -31,7 +33,7 @@ class Crawler:
         self.main_page_link = main_page_link
 
     def search(self, search_request: str, *,
-               one_page_only=False) -> Iterable[Page]:
+               one_page_only) -> Iterable[Page]:
         raise NotImplementedError
 
     def get_messages(self,
@@ -57,21 +59,23 @@ class AsyncCrawler(Crawler):
         super().__init__(session_manager, scraper, main_page_link)
 
     def search(self, search_request: str, *,
-               one_page_only=False) -> List[Page]:
+               one_page_only, max_pages) -> List[Page]:
         pages = []
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(
             self._search_async(search_request,
                                pages,
-                               one_page_only)
+                               one_page_only,
+                               max_pages)
         )
         return pages
 
     async def _search_async(self,
                             search_request: str,
                             pages: List[Page],
-                            one_page_only):
+                            one_page_only: bool,
+                            max_pages: int):
         raise NotImplementedError
 
 
@@ -110,13 +114,13 @@ class BingCrawler(Crawler):
     server = serve_search_engines()
 
     @classmethod
-    def get_results(cls, search_request: str, one_page_only):
+    def get_results(cls, search_request: str, one_page_only, max_pages):
         with no_print():
             engine = cls.Engine(cls.server)
-            return engine.search(search_request, one_page_only)
+            return engine.search(search_request, one_page_only, max_pages)
 
     class Engine(bing):
-        def search(self, query: str, one_page_only: bool):
+        def search(self, query: str, one_page_only: bool, max_pages: int):
             """
             Queries the search_engine for the specified query
             """
@@ -124,9 +128,14 @@ class BingCrawler(Crawler):
             page = self.serve_engine.get_page(url)
             yield from self._get_links(page)
             if not one_page_only:
-                while url := self._get_next_page_url(page):
+                page_num = 1
+                while page_num <= max_pages:
+                    url = self._get_next_page_url(page)
+                    if not url:
+                        break
                     yield from self._get_links(page)
                     page = self.serve_engine.get_page(url)
+                    page_num += 1
 
         def _get_links(self, page: requests.Response):
             links = self.text_result_parsing(page)
@@ -136,9 +145,13 @@ class BingCrawler(Crawler):
             return links
 
         def _get_next_page_url(self, page_resp: requests.Response):
+            if page_resp == '<html>':
+                return ''
             page_str = page_resp.content.decode(page_resp.encoding)
             page_html = BeautifulSoup(page_str, 'html.parser')
             a = page_html.find('a', {'class': 'sb_pagN'})
+            if a is None:
+                return ''
             if 'sb_inactP' not in a['class']:
                 return 'https://www.bing.com' + a['href']
             else:
@@ -163,7 +176,8 @@ class BHFCrawler(AsyncCrawler):
     async def _search_async(self,
                             search_request: str,
                             pages: List[Page],
-                            one_page_only):
+                            one_page_only: bool,
+                            max_pages: int):
         search_results_response = self.session_manager.\
             request_search(search_request)
         search_results = BeautifulSoup(
@@ -178,23 +192,30 @@ class BHFCrawler(AsyncCrawler):
             )
 
         thread_links = self._get_thread_links(
-            search_results, one_page_only
+            search_results, one_page_only, max_pages
         )
         threads = await self.session_manager.fetch(thread_links)
         pages.extend(Page(url, html) for url, html in threads)
 
-    def _get_thread_links(self, html_page: Tag, one_page_only: bool = False):
+    def _get_thread_links(self, html_page: Tag, one_page_only: bool,
+                          max_pages):
         """Get links for threads listed on html page"""
-        for page in self._get_result_pages(html_page, one_page_only):
+        for page in self._get_result_pages(html_page, one_page_only,
+                                           max_pages):
             yield from (
                 f"https://bhf.io{link['href']}" for link in
                 html_page.find_all("a", {"href": re.compile(r"^/thread")})
             )
 
-    def _get_result_pages(self, html_page: Tag, one_page_only: bool) -> Tag:
+    def _get_result_pages(self, html_page: Tag,
+                          one_page_only: bool, max_pages: int) -> Tag:
         yield html_page
         if not one_page_only:
-            while relative_url := self._get_next_page_url(html_page):
+            page_num = 1
+            while page_num <= max_pages:
+                relative_url = self._get_next_page_url(html_page)
+                if not relative_url:
+                    break
                 next_page_url = self.main_page_link + relative_url
                 html = self.session_manager.get_page(next_page_url)
                 yield BeautifulSoup(html, 'html.parser')
@@ -205,6 +226,8 @@ class BHFCrawler(AsyncCrawler):
 
 
 class LolzCrawler(Crawler):
+    SEARCH_PREFIX = 'site:lolz.guru'
+
     def __init__(self, *,
                  session_manager: SessionManager = None,
                  scraper: MessageScraper = None,
@@ -216,8 +239,12 @@ class LolzCrawler(Crawler):
         super().__init__(session_manager, scraper, main_page_link)
 
     def search(self, search_request: str, *,
-               one_page_only=False) -> Iterator[Page]:
-        for url in BingCrawler.get_results(search_request, one_page_only):
+               one_page_only,
+               max_pages) -> Iterator[Page]:
+        for url in BingCrawler.get_results(
+                f'{self.SEARCH_PREFIX} {search_request}',
+                one_page_only=one_page_only,
+                max_pages=max_pages):
             if 'forums' in url:
                 continue
             html = self.session_manager.get_page(url)

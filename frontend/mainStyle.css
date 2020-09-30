@@ -18,6 +18,17 @@ body {
   margin: 0 0 10px 0;
 }
 
+.param-form input[type="number"] {
+  width: 10%;
+  font-size: 16px;
+  color: #fff;
+  margin-bottom: 10px;
+  border: none;
+  border-bottom: 1px solid #fff;
+  outline: none;
+  background: transparent;
+}
+
 .param-form textarea {
   width: 100%;
   padding: 10px 0;

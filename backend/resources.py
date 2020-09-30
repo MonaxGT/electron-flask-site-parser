@@ -10,7 +10,9 @@ class ParseMessages(Resource):
         self.parser.add_argument('filename', required=True, location='json')
         self.parser.add_argument('keywords', required=True, location='json')
         self.parser.add_argument('one_search_page_only', location='json',
-                                 type=bool, default=False)
+                                 type=bool, default=False, required=False)
+        self.parser.add_argument('max_pages', location='json', required=False,
+                                 type=int, default=100)
         self.crawler_class = crawler_class
 
     def post(self):
@@ -18,12 +20,14 @@ class ParseMessages(Resource):
         filename = args['filename']
         keywords: str = args['keywords']
         one_search_page_only = args['one_search_page_only']
+        max_pages = args['max_pages']
 
         try:
-            crawler = BHFCrawler()
+            crawler = self.crawler_class()
             search_terms = keywords.strip().splitlines()
             parse_messages(crawler, search_terms,
-                           filename, one_search_page_only)
+                           filename, one_search_page_only,
+                           max_pages)
         except ServerIsDownException:
             abort(502, message='The server to be parsed is down')
         else:
@@ -38,9 +42,3 @@ class BHFMessages(ParseMessages):
 class LolzMessages(ParseMessages):
     def __init__(self):
         super().__init__(LolzCrawler)
-
-
-if __name__ == "__main__":
-    obj = LolzMessages()
-    obj2 = BHFMessages()
-    print(obj.crawler_class, obj2.crawler_class())

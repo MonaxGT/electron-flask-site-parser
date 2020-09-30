@@ -8,7 +8,8 @@ from parsing.exceptions import NoSearchResultsException
 def parse_messages(crawler: Crawler,
                    search_requests: Iterable[str],
                    workbook_path: str,
-                   search_one_page_only: bool = False):
+                   search_one_page_only: bool,
+                   max_pages: int):
     row_counter = 1
 
     with excel_document(workbook_path) as workbook:
@@ -16,7 +17,8 @@ def parse_messages(crawler: Crawler,
             try:
                 search_results = crawler.search(
                     search_request,
-                    one_page_only=search_one_page_only
+                    one_page_only=search_one_page_only,
+                    max_pages=max_pages
                 )
             except NoSearchResultsException:
                 continue
@@ -52,5 +54,5 @@ if __name__ == '__main__':
         crawler,
         ['одесса харьков'],
         '/home/mean/Projects/CP/res.xlsx',
-        search_one_page_only=False
+        max_pages=1
     )

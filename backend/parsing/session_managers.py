@@ -4,10 +4,12 @@ import requests
 from requests import Session, Response
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from search_engine_scraper import serve_search_engines
 from parsing.exceptions import ServerIsDownException
-
+from utils.context import no_print
 from typing import Iterable
+
+with no_print():
+    from search_engine_scraper import serve_search_engines
 
 
 class SessionManager:
@@ -102,8 +104,6 @@ class LolzSessionManager(SessionManager):
         super().__init__()
         self.main_page_link = main_page_link
         self.cookies = {
-            "xf_session": "023f2a4242ca875122dcc5aac985c259",
-            "xf_market_currency": "usd",
-            "G_ENABLED_IDPS": "google",
+            "xf_user": "3536287%2Cd19ef609dea57b9fb939bfb16cdeef005c6c87c2",
             "df_id": "8fc954a8a7f071d56e1abbe7505d7b31",
         }
