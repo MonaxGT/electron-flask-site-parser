@@ -149,7 +149,7 @@ class BingCrawler(Crawler):
             return links
 
         def _get_next_page_url(self, page_resp: requests.Response):
-            if page_resp == '<html>':
+            if page_resp is None:
                 return ''
             page_str = page_resp.content.decode(page_resp.encoding)
             page_html = BeautifulSoup(page_str, 'html.parser')

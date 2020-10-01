@@ -5,19 +5,16 @@ import requests
 from requests import Session, Response
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from search_engine_scraper import server
 from parsing.exceptions import ServerIsDownException
 from secrets import lolz_login, lolz_password
-from utils.context import no_print
 from typing import Iterable
-
-with no_print():
-    from search_engine_scraper import serve_search_engines
 
 
 class SessionManager:
     def __init__(self, cookies=None):
         self.cookies = cookies if cookies else {}
-        self.server = serve_search_engines()
+        self.server = server
 
     async def afetch(self, url: str, session):
         proxy = next(self.server.proxy_pool)
