@@ -11,3 +11,4 @@ app.spec
 
 electron~aa-parser*
 secrets.py
+secrets_archive.py

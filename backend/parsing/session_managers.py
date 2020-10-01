@@ -7,8 +7,8 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from search_engine_scraper import server
 from parsing.exceptions import ServerIsDownException
-from secrets import lolz_login, lolz_password
 from typing import Iterable
+from secrets_archive import lolz_login, lolz_password
 
 
 class SessionManager:
